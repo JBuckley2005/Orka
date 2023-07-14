@@ -5,7 +5,7 @@ const PORT = 8040;
 const speech = require('@google-cloud/speech');
 const path = require('path');
 const fs = require('fs');
-//const base64Regex = "/^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$/";
+var base64Regex = /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$/;
 
 app.use(express.json({limit: '100mb'}));
 const keyFilename = path.join(__dirname, 'key.json');
@@ -62,14 +62,9 @@ app.post('/get_text', async (req, res) => {
     return res.send(418, {message: "A FLAC audio file is required as input"})
   }
   try {
-    // This would test if the inputted file was 64 bit encoded but the regex test takes too long 
-    // if (base64Regex.test(audioBytes)){
-    //    let text = await getText(audioBytes);
-    //    console.log("Text result:", text);
-    //    res.send({message: "Wayhey!"})
-    // } else {
-    //   return res.status(500, {message:"The file pass was not base 64 encoded"});
-    // }
+    if(!base64Regex.test(audio.data)){
+      return res.send(500, {message:"The file pass was not base 64 encoded"});
+    }
     let text = await getText(audio.data);
     let db = await connectToDatabase();
     if(!db){
@@ -80,8 +75,9 @@ app.post('/get_text', async (req, res) => {
     } else {
       return res.send(500, {message:"Failed to insert entry into database"});
     }
-  } catch {
-    return res.send(500, {message:"An error has occurred"});
+  } catch (e){
+    console.log(e);
+    return res.send(500, {message:"An error occurred"});
   }
 }
 )
