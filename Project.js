@@ -42,16 +42,13 @@ app.post('/get_text', async (req, res) => {
 
   try {
     let audioBytes = audio.data;
-    console.log(audioBytes);
-    if (base64Regex.test(audioBytes)){
-      console.log("H");
-    } else {
-      return res.status(500, {message:"An error has occurred"});
-    }
-    // try {
-      
-    // }catch(e) {
-    //   return res.status(500, {message:"An error has occurred"});
+    // This would test if the inputted file was 64 bit encoded but the regex test takes too long 
+    // if (base64Regex.test(audioBytes)){
+    //    let text = await getText(audioBytes);
+    //    console.log("Text result:", text);
+    //    res.send({message: "Wayhey!"})
+    // } else {
+    //   return res.status(500, {message:"The file pass was not base 64 encoded"});
     // }
     let text = await getText(audioBytes);
     console.log("Text result:", text);
