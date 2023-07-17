@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file.
 
+## 17/07/2023, 15:58pm
+No functionality added. Cleaned up code.
+
 ## 17/07/2023, 12:43pm
 Added functionality to add the correct tables to the database when it connects and fucntionailty for get requests to be recieved that will return the text, inputted audio (Depending on which get request), and the date of every record in the database. Fixed bugs of data being inserted before tables were created.
 
