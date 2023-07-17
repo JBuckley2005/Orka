@@ -3,8 +3,8 @@ This project was based off an software engineering interview question given to m
 
 ## Table of Contents
 
-1. [Description of problem](#Description of problem)
-1. [Set up](#Set up)
+1. [Description of problem](#description-of-problem)
+1. [Set up](#set-up)
 1. [Usage](#usage)
 
 ## Description of problem:
