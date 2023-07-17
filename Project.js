@@ -14,24 +14,54 @@ const client = new speech.SpeechClient({
 });
 
 async function connectToDatabase() {
-  let db = new sqlite3.Database('./SpeechToText.db', sqlite3.OPEN_READWRITE, (err) => {
-    if (err) {
-      return db;
-    }
+  try{
+    let database = fs.statSync("./SpeechToText.db");
+    database.isFile();
+    let db = new sqlite3.Database('./SpeechToText.db', sqlite3.OPEN_READWRITE);
+    return db;
+  } catch {
+    return await createDatabase();
+  }
+}
+
+async function createDatabase(){
+  return new Promise((resolve, reject) => {
+    let db = new sqlite3.Database('SpeechToText.db', async (err) => {
+      if (err) {
+          reject(true);
+      } else {
+        await createTables(db).catch(() => {reject(true)});
+        resolve(db);
+      }
+    });
+  })
+}
+
+async function createTables(db){
+  return new Promise((resolve, reject) => {
+    db.run('CREATE TABLE IF NOT EXISTS Entries(id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT, inputtedAudio TEXT, dateAdded TEXT);', [], function(err) {
+      if(err){
+        reject(err);
+      } else {
+        resolve(true);
+      }
+    });
   });
-  return db;
 }
 
 async function insertEntry(text, audioBytes, db){
-  const date = new Date();
-  let dateAdded = date.toLocaleDateString();
-  db.run('INSERT INTO Entries (text, inputtedAudio, dateAdded) VALUES (?,?,?)', [text, audioBytes, dateAdded], function(err) {
-    if (err){
-      return false;
-    } else {
-      return true;
-    }
-  })
+  return new Promise((resolve, reject) => {
+    const date = new Date();
+    let dateAdded = date.toLocaleDateString();
+    db.run('INSERT INTO Entries (text, inputtedAudio, dateAdded) VALUES (?,?,?)', [text, audioBytes, dateAdded], function(err) {
+      if (err){
+        console.log(err);
+        reject(err);
+      } else {
+        resolve(true);
+      }
+    });
+  });
 }
 
 async function getText(audioBytes) {
@@ -56,28 +86,29 @@ app.listen(
   () => console.log('Its alive on https://localhost:8040')
 )
 
-app.post('/get_text', async (req, res) => {
+app.post('/get_speech_as_text', async (req, res) => {
   const {audio} = req.body;
   if(!audio || !audio.data) {
-    return res.send(418, {message: "A FLAC audio file is required as input"})
+    return res.status(418).send({message: "A FLAC audio file is required as input"})
   }
   try {
     if(!base64Regex.test(audio.data)){
-      return res.send(500, {message:"The file pass was not base 64 encoded"});
+      return res.status(500).send({message:"The file pass was not base 64 encoded"});
     }
     let text = await getText(audio.data);
     let db = await connectToDatabase();
     if(!db){
-      return res.send(500, {message:"Failed to connect to database"});
+      return res.status(500).send({message:"Failed to connect to database / create tables in database"});
     }
-    if(insertEntry(text, audio.data, db)){
-      return res.send(200, {message: "Wayhey!"})
+    let successfulInsertion = await insertEntry(text, audio.data, db).catch(() => false);
+    if(successfulInsertion){
+      return res.status(200).send({message: "Wayhey!"})
     } else {
-      return res.send(500, {message:"Failed to insert entry into database"});
+      return res.status(500).send({message:"Failed to insert entry into database"});
     }
   } catch (e){
     console.log(e);
-    return res.send(500, {message:"An error occurred"});
+    return res.status(500).send({message:"An error occurred"});
   }
 }
 )
