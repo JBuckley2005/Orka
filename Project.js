@@ -5,7 +5,6 @@ const PORT = 8040;
 const speech = require('@google-cloud/speech');
 const path = require('path');
 const fs = require('fs');
-const { triggerAsyncId } = require('async_hooks');
 var base64Regex = /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$/;
 
 app.use(express.json({limit: '100mb'}));
@@ -62,7 +61,6 @@ async function insertEntry(text, audioBytes, db){
     let dateAdded = date.toLocaleDateString();
     db.run('INSERT INTO Entries (text, inputtedAudio, dateAdded) VALUES (?,?,?)', [text, audioBytes, dateAdded], function(err) {
       if (err){
-        console.log(err);
         reject(err);
       } else {
         resolve(true);
@@ -157,8 +155,8 @@ app.post('/get_speech_as_text', async (req, res) => {
 app.get('/get_text_results', async(req, res) => {
   returnValue = await getEntries(false);
   try{
-    console.log(returnValue);
     JSON.parse(returnValue);
+    res.set({'Content-Type': 'application/json'});
     res.status(200).send(returnValue);
   } catch {
     return res.status(500).send({message:returnValue});
@@ -170,6 +168,7 @@ app.get('/get_text_results_and_audio', async(req, res) => {
   returnValue = await getEntries(true);
   try{
     JSON.parse(returnValue);
+    res.set({'Content-Type': 'application/json'});
     res.status(200).send(returnValue);
   } catch {
     return res.status(500).send({message:returnValue});
