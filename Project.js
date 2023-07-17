@@ -5,6 +5,7 @@ const PORT = 8040;
 const speech = require('@google-cloud/speech');
 const path = require('path');
 const fs = require('fs');
+const { triggerAsyncId } = require('async_hooks');
 var base64Regex = /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$/;
 
 app.use(express.json({limit: '100mb'}));
@@ -13,14 +14,20 @@ const client = new speech.SpeechClient({
   keyFilename: keyFilename
 });
 
-async function connectToDatabase() {
+async function connectToDatabase(Writing) {
   try{
     let database = fs.statSync("./SpeechToText.db");
     database.isFile();
     let db = new sqlite3.Database('./SpeechToText.db', sqlite3.OPEN_READWRITE);
+    await createTables(db).catch(() => {return true;});
     return db;
   } catch {
-    return await createDatabase();
+    if(Writing){
+      let db = await createDatabase().catch(() => {return true;});
+      return db;
+    } else {
+      return true;
+    }
   }
 }
 
@@ -30,7 +37,7 @@ async function createDatabase(){
       if (err) {
           reject(true);
       } else {
-        await createTables(db).catch(() => {reject(true)});
+        await createTables(db).catch(() => {reject(true);});
         resolve(db);
       }
     });
@@ -62,6 +69,41 @@ async function insertEntry(text, audioBytes, db){
       }
     });
   });
+}
+
+async function getEntriesAsJSON(db, includeInputtedAudio){
+  return new Promise((resolve, reject) => {
+    if(includeInputtedAudio){
+      db.all('SELECT text, inputtedAudio, dateAdded FROM Entries', (err, rows) => {
+        if(err){
+          reject("Failed to access Enteries in database, please check if there is an Entries table in the database");
+        } else {
+          resolve(JSON.stringify(rows));
+        }
+      });
+    } else {
+      db.all('SELECT text, dateAdded FROM Entries', (err, rows) => {
+        if(err){
+          reject("Failed to access Enteries in database, please check if there is an Entries table in the database");
+        } else {
+          resolve(JSON.stringify(rows));
+        }
+      });
+    }
+  })
+}
+
+async function getEntries(includeInputtedAudio){
+let db = await connectToDatabase(false);
+  if(!db){
+    return "Failed to connect to database";
+  }
+  try{
+    let JSONResults = await getEntriesAsJSON(db, includeInputtedAudio);
+    return JSONResults;
+  } catch (err){
+    return err;
+  }
 }
 
 async function getText(audioBytes) {
@@ -96,7 +138,7 @@ app.post('/get_speech_as_text', async (req, res) => {
       return res.status(500).send({message:"The file pass was not base 64 encoded"});
     }
     let text = await getText(audio.data);
-    let db = await connectToDatabase();
+    let db = await connectToDatabase(true);
     if(!db){
       return res.status(500).send({message:"Failed to connect to database / create tables in database"});
     }
@@ -110,5 +152,26 @@ app.post('/get_speech_as_text', async (req, res) => {
     console.log(e);
     return res.status(500).send({message:"An error occurred"});
   }
-}
-)
+})
+
+app.get('/get_text_results', async(req, res) => {
+  returnValue = await getEntries(false);
+  try{
+    console.log(returnValue);
+    JSON.parse(returnValue);
+    res.status(200).send(returnValue);
+  } catch {
+    return res.status(500).send({message:returnValue});
+  }
+})
+
+
+app.get('/get_text_results_and_audio', async(req, res) => {
+  returnValue = await getEntries(true);
+  try{
+    JSON.parse(returnValue);
+    res.status(200).send(returnValue);
+  } catch {
+    return res.status(500).send({message:returnValue});
+  }
+})
