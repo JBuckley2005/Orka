@@ -1,5 +1,4 @@
 node_modules/
-front-end/
 key.json
 SpeechToText.db
 *.flac
