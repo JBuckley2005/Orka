@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented in this file.
 
+## 18/07/2023, 11:40am
+Added small code fixes and added PR template.
+
 ## 17/07/2023, 15:58pm
 No functionality added. Cleaned up code.
 

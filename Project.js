@@ -13,7 +13,7 @@ const client = new speech.SpeechClient({
   keyFilename: keyFilename
 });
 
-async function connectToDatabase(Writing) {
+async function connectToDatabase(writing) {
   try{
     let database = fs.statSync("./SpeechToText.db");
     database.isFile();
@@ -21,7 +21,7 @@ async function connectToDatabase(Writing) {
     await createTables(db).catch(() => {return true;});
     return db;
   } catch {
-    if(Writing){
+    if(writing){
       let db = await createDatabase().catch(() => {return true;});
       return db;
     } else {
