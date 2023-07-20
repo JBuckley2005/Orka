@@ -1,6 +1,7 @@
 const sqlite3 = require('sqlite3')
 const express = require('express');
 const app = express();
+const cors = require('cors');
 const PORT = 8040;
 const speech = require('@google-cloud/speech');
 const path = require('path');
@@ -12,6 +13,8 @@ const keyFilename = path.join(__dirname, 'key.json');
 const client = new speech.SpeechClient({
   keyFilename: keyFilename
 });
+
+app.use(cors());
 
 async function connectToDatabase(writing) {
   try{
@@ -174,3 +177,4 @@ app.get('/get_text_results_and_audio', async(req, res) => {
     return res.status(500).send({message:returnValue});
   }
 })
+

@@ -1,4 +1,9 @@
 node_modules/
+website.html
+styleSheet.css
+orkaBackground.jpeg
+testFile1.json
+testFile2.json
 key.json
 SpeechToText.db
 *.flac
